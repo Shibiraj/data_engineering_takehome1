@@ -1,4 +1,4 @@
-version: "1"
+version: "3.8"
 services:
   docs:
     container_name: docs
@@ -65,7 +65,9 @@ services:
 
   jupyter:
     container_name: jupyter
-    image: arjones/pyspark:2.4.5
+    build:
+      context: .
+      dockerfile: Dockerfile.python
     restart: always
     environment:
       MASTER: spark://master:7077
@@ -77,3 +79,5 @@ services:
       - ./jupyter/notebook:/notebook
       - ./dataset:/dataset
       - ./code:/app
+    command: >
+      jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --no-browser --notebook-dir=/notebook
