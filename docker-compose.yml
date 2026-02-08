@@ -1,4 +1,3 @@
-version: "3.8"
 services:
   docs:
     container_name: docs
@@ -12,13 +11,14 @@ services:
     container_name: master
     image: arjones/pyspark:2.4.5
     restart: always
-    command: ["/opt/spark/sbin/start-master.sh"]
+    entrypoint: >
+      sh -c "pip3 install pyarrow==0.14.1 && /opt/spark/sbin/start-master.sh"
     environment:
       MASTER: spark://master:7077
       SPARK_NO_DAEMONIZE: 1
+      PYTHONPATH: "/opt/spark/python:/opt/spark/python/lib/py4j-0.10.7-src.zip"
     ports:
       - 4040:4040
-      - 6066:6066
       - 7077:7077
       - 8080:8080
     volumes:
@@ -29,16 +29,15 @@ services:
     container_name: worker1
     image: arjones/pyspark:2.4.5
     restart: always
-    command: ["/opt/spark/sbin/start-slave.sh", "spark://master:7077"]
+    entrypoint: >
+      sh -c "pip3 install pyarrow==0.14.1 && /opt/spark/sbin/start-slave.sh spark://master:7077"
     environment:
       MASTER: spark://master:7077
       SPARK_NO_DAEMONIZE: 1
+      PYTHONPATH: "/opt/spark/python:/opt/spark/python/lib/py4j-0.10.7-src.zip"
     depends_on:
       - master
     ports:
-      - 4041:4040
-      - "6066"
-      - "7077"
       - 8081:8080
     volumes:
       - ./code:/app
@@ -48,16 +47,15 @@ services:
     container_name: worker2
     image: arjones/pyspark:2.4.5
     restart: always
-    command: ["/opt/spark/sbin/start-slave.sh", "spark://master:7077"]
+    entrypoint: >
+      sh -c "pip3 install pyarrow==0.14.1 && /opt/spark/sbin/start-slave.sh spark://master:7077"
     environment:
       MASTER: spark://master:7077
       SPARK_NO_DAEMONIZE: 1
+      PYTHONPATH: "/opt/spark/python:/opt/spark/python/lib/py4j-0.10.7-src.zip"
     depends_on:
       - master
     ports:
-      - 4042:4040
-      - "6066"
-      - "7077"
       - 8082:8080
     volumes:
       - ./code:/app
@@ -65,12 +63,15 @@ services:
 
   jupyter:
     container_name: jupyter
-    build:
-      context: .
-      dockerfile: Dockerfile.python
+    image: arjones/pyspark:2.4.5
     restart: always
+    entrypoint: >
+      sh -c "pip3 install pyarrow==0.14.1 && jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --notebook-dir=/notebook"
     environment:
       MASTER: spark://master:7077
+      ARROW_PRE_0_15_0_PANDAS_COMPATIBILITY: "1"
+      PYTHONPATH: "/opt/spark/python:/opt/spark/python/lib/py4j-0.10.7-src.zip"
+      PYSPARK_PYTHON: python3
     depends_on:
       - master
     ports:
@@ -79,5 +80,3 @@ services:
       - ./jupyter/notebook:/notebook
       - ./dataset:/dataset
       - ./code:/app
-    command: >
-      jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --no-browser --notebook-dir=/notebook
